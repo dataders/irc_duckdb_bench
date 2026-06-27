@@ -71,10 +71,17 @@ Build a static dashboard for the newest benchmark run:
 uv run scripts/build_dashboard.py
 ```
 
+Build the mviz report from the combined engine matrix Parquet file:
+
+```bash
+uv run scripts/build_mviz_report.py
+```
+
 ## Development
 
 ```bash
 uv run tests/test_build_dashboard.py -v
+uv run tests/test_build_mviz_report.py -v
 uv run tests/test_catalog_benchmark.py -v
 uv run tests/test_standalone_project.py -v
 uv run --group dev ruff format --check --no-cache scripts tests

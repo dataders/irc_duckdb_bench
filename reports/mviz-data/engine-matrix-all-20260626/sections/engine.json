@@ -1,0 +1,4 @@
+{
+  "content": "## Performance Across Data Sizes By Query Engine\n\nEach chart fixes one query engine and compares catalogs across input sizes.",
+  "type": "textarea"
+}

@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "AWS S3 Tables": 6.415,
+      "Polaris remote": 2.389,
+      "Snowflake Horizon": 45.714,
+      "size": "tiny"
+    },
+    {
+      "AWS S3 Tables": 7.329,
+      "Polaris remote": 2.407,
+      "Snowflake Horizon": 25.174,
+      "size": "small"
+    },
+    {
+      "AWS S3 Tables": 9.702,
+      "Polaris remote": 4.146,
+      "Snowflake Horizon": 24.979,
+      "size": "medium"
+    },
+    {
+      "AWS S3 Tables": 39.609,
+      "Polaris remote": 20.061,
+      "Snowflake Horizon": 32.138,
+      "size": "large"
+    }
+  ],
+  "format": "duration",
+  "title": "DuckDB: remote catalogs",
+  "type": "line",
+  "x": "size",
+  "y": [
+    "Polaris remote",
+    "Snowflake Horizon",
+    "AWS S3 Tables"
+  ]
+}

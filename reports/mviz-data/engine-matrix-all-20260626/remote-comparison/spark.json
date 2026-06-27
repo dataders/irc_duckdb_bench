@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "AWS S3 Tables": 10.744282,
+      "Polaris remote": 5.269865,
+      "Snowflake Horizon": 23.312209,
+      "size": "tiny"
+    },
+    {
+      "AWS S3 Tables": 6.121774,
+      "Polaris remote": 2.945484,
+      "Snowflake Horizon": 15.227815,
+      "size": "small"
+    },
+    {
+      "AWS S3 Tables": 12.513253,
+      "Polaris remote": 6.159776,
+      "Snowflake Horizon": 19.452835,
+      "size": "medium"
+    },
+    {
+      "AWS S3 Tables": 24.155968,
+      "Polaris remote": 8.436577,
+      "Snowflake Horizon": 31.529776,
+      "size": "large"
+    }
+  ],
+  "format": "duration",
+  "title": "Spark: remote catalogs",
+  "type": "line",
+  "x": "size",
+  "y": [
+    "Polaris remote",
+    "Snowflake Horizon",
+    "AWS S3 Tables"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "data": [
+    {
+      "AWS Glue": 6.286,
+      "AWS S3 Tables": 6.415,
+      "Polaris remote": 2.389,
+      "Snowflake Horizon": 45.714,
+      "size": "tiny"
+    },
+    {
+      "AWS Glue": 7.094,
+      "AWS S3 Tables": 7.329,
+      "Polaris remote": 2.407,
+      "Snowflake Horizon": 25.174,
+      "size": "small"
+    },
+    {
+      "AWS Glue": 9.672,
+      "AWS S3 Tables": 9.702,
+      "Polaris remote": 4.146,
+      "Snowflake Horizon": 24.979,
+      "size": "medium"
+    },
+    {
+      "AWS Glue": 41.912,
+      "AWS S3 Tables": 39.609,
+      "Polaris remote": 20.061,
+      "Snowflake Horizon": 32.138,
+      "size": "large"
+    }
+  ],
+  "format": "duration",
+  "title": "DuckDB",
+  "type": "line",
+  "x": "size",
+  "y": [
+    "AWS Glue",
+    "AWS S3 Tables",
+    "Snowflake Horizon",
+    "Polaris remote"
+  ]
+}

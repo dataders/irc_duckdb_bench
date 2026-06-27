@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "DuckDB": 2.389,
+      "PyIceberg": 1.777305,
+      "Spark": 5.269865,
+      "size": "tiny"
+    },
+    {
+      "DuckDB": 2.407,
+      "PyIceberg": 1.564074,
+      "Spark": 2.945484,
+      "size": "small"
+    },
+    {
+      "DuckDB": 4.146,
+      "PyIceberg": 2.794235,
+      "Spark": 6.159776,
+      "size": "medium"
+    },
+    {
+      "DuckDB": 20.061,
+      "PyIceberg": 10.438981,
+      "Spark": 8.436577,
+      "size": "large"
+    }
+  ],
+  "format": "duration",
+  "title": "Polaris remote",
+  "type": "line",
+  "x": "size",
+  "y": [
+    "DuckDB",
+    "PyIceberg",
+    "Spark"
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "content": "## Performance Across Data Sizes By Catalog\n\nEach chart fixes one catalog and compares DuckDB, PyIceberg, and Spark.",
+  "type": "textarea"
+}

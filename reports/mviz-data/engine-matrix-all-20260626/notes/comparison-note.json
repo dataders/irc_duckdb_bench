@@ -1,0 +1,6 @@
+{
+  "content": "DuckDB rows use the CRUD workload. PyIceberg and Spark rows use create-write-read. `operation_s` excludes engine startup/setup where possible, but DuckDB still includes delete and read-after-delete work.",
+  "label": "Comparison note",
+  "noteType": "warning",
+  "type": "note"
+}

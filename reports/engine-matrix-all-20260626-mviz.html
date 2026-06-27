@@ -1,0 +1,4480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DuckDB Iceberg Engine Matrix</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* CSS Variables for theming */
+    :root {
+      --bg: #f8f8f8;
+      --fg: #231f20;
+      --text: #231f20;
+      --text-muted: #6a6a6a;
+      --grid: #d4d4d4;
+      --red: #bc1200;
+      --link: #0777b3;
+      --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --font-mono: 'Consolas', 'Monaco', monospace;
+    }
+    body.theme-dark {
+      --bg: #231f20;
+      --fg: #ffffff;
+      --text: #ffffff;
+      --text-muted: #888888;
+      --grid: #3a3a3a;
+      --red: #bc1200;
+      --link: #0777b3;
+    }
+
+    html, body {
+      width: 100%; min-height: 100%;
+      background-color: var(--bg);
+      font-family: var(--font-family);
+      color: var(--text);
+      font-size: 12px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dashboard {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .title-row .page-title {
+      margin-bottom: 0;
+    }
+    .theme-toggle {
+      background: transparent;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s;
+    }
+    .theme-toggle:hover {
+      color: var(--text);
+    }
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+    .theme-toggle .icon-moon { display: block; }
+    .theme-toggle .icon-sun { display: none; }
+    body.theme-dark .theme-toggle .icon-moon { display: none; }
+    body.theme-dark .theme-toggle .icon-sun { display: block; }
+    .red-line {
+      width: 100%;
+      height: 2px;
+      background-color: var(--red);
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-family: var(--font-family);
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .dashboard-section {
+      margin-bottom: 16px;
+    }
+    /* Visual divider only appears with explicit --- separator */
+    .dashboard-section.has-divider {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--grid);
+    }
+    .section-title {
+      font-family: var(--font-family);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .chart-title {
+      font-family: var(--font-family); font-weight: 700;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 720px) {
+      .row { grid-template-columns: repeat(8, 1fr); }
+      /* Scale spans proportionally: preserve original span but cap at grid width */
+      .row > * { grid-column: span min(var(--col-span, 8), 8); }
+    }
+    @media (max-width: 480px) {
+      .row { grid-template-columns: 1fr; }
+      .row > * { grid-column: span 1; }
+      .grid-item { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
+    @media print {
+      @page { size: letter portrait; margin: 0.5in; }
+      .dashboard { max-width: 100%; padding: 0; }
+      .row { gap: 6px; margin-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+      .grid-item { break-inside: avoid; page-break-inside: avoid; }
+      .dashboard-section { break-inside: avoid; page-break-inside: avoid; }
+      .dashboard-section.page-break { page-break-before: always; }
+      .section-title { break-after: avoid; page-break-after: avoid; }
+      .data-table { break-inside: avoid; page-break-inside: avoid; }
+      .theme-toggle { display: none; }
+      .title-row { break-after: avoid; page-break-after: avoid; }
+    }
+    .grid-item {
+      background: var(--bg);
+      padding: 4px;
+      transition: background-color 0.3s;
+    }
+    .mermaid-container svg {
+      max-width: 100%;
+      height: auto;
+      transition: background 0.3s;
+    }
+    .big-value {
+      font-family: var(--font-family); font-weight: 700;
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--text);
+      line-height: 1;
+    }
+    .delta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .delta .arrow {
+      font-size: 16px;
+    }
+    .delta .value {
+      font-family: var(--font-family);
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 10px;
+      border-left: 2px solid;
+    }
+    .alert .icon {
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .alert .message {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .note {
+      border-left: 3px solid var(--red);
+      background-color: color-mix(in srgb, var(--grid) 25%, transparent);
+      padding: 8px 12px;
+    }
+    .note-warning {
+      border-left-color: #C5A000;
+    }
+    .note-tip {
+      border-left-color: #00887d;
+    }
+    .note-content {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .note-content strong {
+      font-weight: 700;
+    }
+    .text-content {
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    pre.mermaid {
+      background: transparent;
+      text-align: center;
+      padding: 16px 0;
+    }
+    .data-table {
+      width: 100%; border-collapse: collapse; font-size: 11px;
+    }
+    .data-table th {
+      font-family: var(--font-family); font-size: 9px; font-weight: bold;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em;
+      padding: 6px 8px; border-bottom: 1px solid var(--text); text-align: left;
+    }
+    .data-table td {
+      padding: 5px 8px; color: var(--text); border-bottom: 1px solid var(--grid);
+    }
+    .data-table tr.table-striped td {
+      background-color: color-mix(in srgb, var(--grid) 19%, transparent);
+    }
+    .data-table.table-compact th, .data-table.table-compact td {
+      padding: 4px 6px;
+    }
+    .markdown-content {
+      font-size: 11px; color: var(--text); line-height: 1.5;
+    }
+    .markdown-content h1 { font-size: 18px; font-weight: 900; margin: 12px 0 6px 0; }
+    .markdown-content h2 { font-size: 14px; font-weight: 700; margin: 10px 0 4px 0; }
+    .markdown-content h3 { font-size: 12px; font-weight: 700; margin: 8px 0 4px 0; }
+    .markdown-content p { margin: 6px 0; }
+    .markdown-content ul, .markdown-content ol { margin: 6px 0; padding-left: 20px; }
+    .markdown-content li { margin: 3px 0; }
+    .markdown-content code {
+      background: color-mix(in srgb, var(--grid) 25%, transparent); padding: 1px 4px; border-radius: 2px;
+      font-family: var(--font-mono); font-size: 10px;
+    }
+    .markdown-content pre {
+      background: color-mix(in srgb, var(--grid) 25%, transparent); padding: 8px; border-radius: 3px;
+      overflow-x: auto; margin: 8px 0;
+    }
+    .markdown-content pre code { background: none; padding: 0; }
+    .markdown-content blockquote {
+      border-left: 2px solid var(--red); margin: 8px 0; padding-left: 12px;
+      color: var(--text-muted); font-style: italic;
+    }
+    .markdown-content a { color: var(--link); text-decoration: none; }
+    .markdown-content a:hover { text-decoration: underline; }
+    .markdown-content strong { font-weight: 700; }
+    .markdown-content em { font-style: italic; }
+    .empty-space { background: transparent; }
+    /* Inline header styles (### soft headers) */
+    .inline-header {
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    .inline-header-text {
+      font-family: var(--font-family);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+    /* Progress bar sparkline styles */
+    .pct-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .pct-bar-container {
+      flex: 1;
+      height: 12px;
+      background-color: var(--grid);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .pct-bar-fill {
+      height: 100%;
+      background-color: #0777b3;
+      border-radius: 2px 0 0 2px;
+    }
+    .pct-bar-value {
+      font-size: 11px;
+      color: var(--text);
+      font-family: var(--font-family);
+      font-weight: 700;
+      min-width: 32px;
+      flex-shrink: 0;
+    }
+    /* Sparkline tooltip styles - immediate display on hover */
+    .spark-tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .spark-tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-family);
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+      z-index: 1000;
+      margin-bottom: 4px;
+    }
+    .spark-tooltip:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .mviz-export-menu {
+      position: fixed;
+      z-index: 10000;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      padding: 4px 0;
+      min-width: 200px;
+      font-family: var(--font-family, 'Helvetica Neue', Helvetica, Arial, sans-serif);
+      font-size: 12px;
+      color: #231f20;
+    }
+    body.theme-dark .mviz-export-menu {
+      background: #424242;
+      border-color: #757575;
+      color: #eeeeee;
+    }
+    .mviz-export-menu-header {
+      padding: 6px 12px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9e9e9e;
+    }
+    body.theme-dark .mviz-export-menu-header { color: #757575; }
+    .mviz-export-menu-item {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .mviz-export-menu-item:hover {
+      background: #f5f5f5;
+    }
+    body.theme-dark .mviz-export-menu-item:hover {
+      background: #3a3a3a;
+    }
+    @media print {
+      .mviz-export-menu { display: none; }
+    }
+  </style>
+</head>
+<body class="theme-light">
+  <div class="dashboard dashboard-continuous">
+    <div class="red-line"></div>
+    <div class="title-row">
+      <h1 class="page-title">DuckDB Iceberg Engine Matrix</h1>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+    </div>
+    
+        <section class="dashboard-section">
+          
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
+      <div class="big-value">48</div>
+      <div class="label">Benchmark rows</div>
+    </div>
+    <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
+      <div class="big-value">8.44</div>
+      <div class="label">Fastest large remote: Polaris remote / Spark</div>
+    </div>
+    <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
+      <div class="big-value">12</div>
+      <div class="label">Polaris remote wins across size/engine pairs</div>
+    </div>
+    <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
+      <div class="big-value">3</div>
+      <div class="label">Remote catalogs compared</div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <div class="note note-warning">
+        <div class="note-content"><strong>Comparison note:</strong> DuckDB rows use the CRUD workload. PyIceberg and Spark rows use create-write-read. <code>operation_s</code> excludes engine startup/setup where possible, but DuckDB still includes delete and read-after-delete work.</div>
+      </div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
+      
+      <div class="markdown-content" id="md-6210032"></div>
+      <script>
+        document.getElementById('md-6210032').innerHTML = marked.parse(`## Performance Across Data Sizes By Catalog
+
+Each chart fixes one catalog and compares DuckDB, PyIceberg, and Spark.`);
+      </script>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">AWS Glue</h3>
+      <div id="chart_7" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">AWS S3 Tables</h3>
+      <div id="chart_8" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Snowflake Horizon</h3>
+      <div id="chart_9" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Polaris remote</h3>
+      <div id="chart_10" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
+      
+      <div class="markdown-content" id="md-6099224"></div>
+      <script>
+        document.getElementById('md-6099224').innerHTML = marked.parse(`## Performance Across Data Sizes By Query Engine
+
+Each chart fixes one query engine and compares catalogs across input sizes.`);
+      </script>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">DuckDB</h3>
+      <div id="chart_12" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">PyIceberg</h3>
+      <div id="chart_13" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Spark</h3>
+      <div id="chart_14" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section has-divider">
+          
+          <div class="row">
+            
+    <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
+      
+      <div class="markdown-content" id="md-5974175"></div>
+      <script>
+        document.getElementById('md-5974175').innerHTML = marked.parse(`## Remote Catalog Comparison
+
+Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
+      </script>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">DuckDB: remote catalogs</h3>
+      <div id="chart_16" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">PyIceberg: remote catalogs</h3>
+      <div id="chart_17" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Spark: remote catalogs</h3>
+      <div id="chart_18" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Remote catalog operation seconds and ratios</h3>
+      <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+        <thead>
+          <tr><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Size</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Engine</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Fastest</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Polaris remote</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Horizon</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">AWS S3 Tables</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Horizon / Polaris</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">S3 Tables / Polaris</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">DuckDB</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.39</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">45.71</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.42</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">19.1</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.7</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">PyIceberg</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">1.78</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">29.48</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3.54</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">16.6</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Spark</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">5.27</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">23.31</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10.74</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.4</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">DuckDB</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.41</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">25.17</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.33</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10.5</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">PyIceberg</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">1.56</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">22.37</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3.57</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">14.3</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.3</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Spark</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.95</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">15.23</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.12</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">5.2</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.1</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">DuckDB</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.15</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">24.98</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">9.70</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.0</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.3</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">PyIceberg</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.79</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">12.69</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">5.48</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.5</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Spark</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.16</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">19.45</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">12.51</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3.2</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">DuckDB</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">20.06</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">32.14</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">39.61</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">1.6</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.0</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">PyIceberg</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10.44</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">25.50</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">18.06</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.4</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">1.7</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Spark</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">8.44</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">31.53</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">24.16</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3.7</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.9</td></tr>
+        </tbody>
+      </table>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="inline-header" style="--col-span: 16; grid-column: span 16;">
+      <p class="inline-header-text">Source</p>
+    </div>
+          </div>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <div class="text-content">Parquet input: `reports/engine-matrix-all-20260626.parquet`. Generated mviz data: `reports/mviz-data/engine-matrix-all-20260626`.</div>
+    </div>
+          </div>
+        </section>
+  </div>
+  <script>
+    // Theme toggle function
+    function toggleTheme() {
+      var isDark = document.body.classList.contains('theme-dark');
+      var newTheme = isDark ? 'light' : 'dark';
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add('theme-' + newTheme);
+
+      // Update all charts
+      if (window.chartInstances && window.chartOptions) {
+        for (var id in window.chartInstances) {
+          window.chartInstances[id].setOption(window.chartOptions[id][newTheme]);
+        }
+      }
+    }
+
+    
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_7'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_7'] = chart;
+      window.chartOptions['chart_7'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        6.286,
+        7.094,
+        9.672,
+        41.912
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        7.740129,
+        7.949641,
+        9.739888,
+        33.65938
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        9.033699,
+        5.473507,
+        9.339621,
+        30.974569
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        6.286,
+        7.094,
+        9.672,
+        41.912
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        7.740129,
+        7.949641,
+        9.739888,
+        33.65938
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        9.033699,
+        5.473507,
+        9.339621,
+        30.974569
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_7'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_8'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_8'] = chart;
+      window.chartOptions['chart_8'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_8'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_9'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_9'] = chart;
+      window.chartOptions['chart_9'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_9'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_10'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_10'] = chart;
+      window.chartOptions['chart_10'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "DuckDB",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "PyIceberg",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Spark",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_10'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_12'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_12'] = chart;
+      window.chartOptions['chart_12'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        6.286,
+        7.094,
+        9.672,
+        41.912
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e18727"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e18727",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        6.286,
+        7.094,
+        9.672,
+        41.912
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#f5a84a"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#f5a84a",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_12'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_13'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_13'] = chart;
+      window.chartOptions['chart_13'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        7.740129,
+        7.949641,
+        9.739888,
+        33.65938
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e18727"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e18727",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        7.740129,
+        7.949641,
+        9.739888,
+        33.65938
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#f5a84a"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#f5a84a",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_13'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_14'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_14'] = chart;
+      window.chartOptions['chart_14'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        9.033699,
+        5.473507,
+        9.339621,
+        30.974569
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e18727"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e18727",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "AWS Glue",
+      "type": "line",
+      "data": [
+        9.033699,
+        5.473507,
+        9.339621,
+        30.974569
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#f5a84a"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#f5a84a",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_14'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_16'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_16'] = chart;
+      window.chartOptions['chart_16'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.389,
+        2.407,
+        4.146,
+        20.061
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        45.714,
+        25.174,
+        24.979,
+        32.138
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        6.415,
+        7.329,
+        9.702,
+        39.609
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_16'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_17'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_17'] = chart;
+      window.chartOptions['chart_17'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_17'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_18'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_18'] = chart;
+      window.chartOptions['chart_18'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        5.269865,
+        2.945484,
+        6.159776,
+        8.436577
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        23.312209,
+        15.227815,
+        19.452835,
+        31.529776
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        10.744282,
+        6.121774,
+        12.513253,
+        24.155968
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_18'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+
+    // Sparkline tooltip interactivity
+    document.querySelectorAll('.spark-hit').forEach(hit => {
+      hit.addEventListener('mouseenter', function() {
+        const tooltip = this.closest('.spark-tooltip');
+        if (tooltip) {
+          tooltip.setAttribute('data-tooltip', this.dataset.idx + ': ' + this.dataset.val);
+        }
+      });
+      hit.addEventListener('mouseleave', function() {
+        const tooltip = this.closest('.spark-tooltip');
+        if (tooltip && tooltip.dataset.default) {
+          tooltip.setAttribute('data-tooltip', tooltip.dataset.default);
+        }
+      });
+    });
+
+    
+    // --- mviz PNG export ---
+    (function() {
+      var PRESETS = {"square":{"width":1080,"height":1080,"label":"Square (1080 × 1080)"},"portrait":{"width":1080,"height":1350,"label":"Portrait (1080 × 1350)"},"landscape":{"width":1920,"height":1080,"label":"Landscape (1920 × 1080)"}};
+      var CFG = {"LOGICAL_BASE":360,"TITLE_FONT_SIZE":14,"TITLE_PADDING_TOP":12,"TITLE_PADDING_BOTTOM":8,"TITLE_PADDING_LEFT":12,"BG_LIGHT":"#f8f8f8","BG_DARK":"#231f20","TEXT_LIGHT":"#231f20","TEXT_DARK":"#eeeeee"};
+      var menu = null;
+
+      function removeMenu() {
+        if (menu && menu.parentNode) { menu.parentNode.removeChild(menu); menu = null; }
+      }
+
+      function isDarkTheme() {
+        return document.body.classList.contains('theme-dark');
+      }
+
+      function getChartBg() {
+        var bg = getComputedStyle(document.body).backgroundColor;
+        return (bg && bg !== 'rgba(0, 0, 0, 0)') ? bg : (isDarkTheme() ? CFG.BG_DARK : CFG.BG_LIGHT);
+      }
+
+      function getChartTitle(chartEl) {
+        var gridItem = chartEl.closest('.grid-item');
+        if (gridItem) {
+          var h3 = gridItem.querySelector('.chart-title');
+          if (h3) return h3.textContent.trim();
+        }
+        return '';
+      }
+
+      function slugify(text) {
+        return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'chart';
+      }
+
+      function renderChart(chartId, drawW, drawH) {
+        var tmpDiv = document.createElement('div');
+        tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:' + drawW + 'px;height:' + drawH + 'px;';
+        document.body.appendChild(tmpDiv);
+
+        var tmpChart = echarts.init(tmpDiv, null, {renderer: 'canvas', width: drawW, height: drawH});
+        var currentTheme = isDarkTheme() ? 'dark' : 'light';
+        var opts = window.chartOptions && window.chartOptions[chartId];
+        var instance = window.chartInstances[chartId];
+        tmpChart.setOption(opts ? opts[currentTheme] : instance.getOption());
+
+        return { div: tmpDiv, chart: tmpChart };
+      }
+
+      function getThemeFont() {
+        var fontFamily = getComputedStyle(document.body).fontFamily;
+        return fontFamily || '"Helvetica Neue", Helvetica, Arial, sans-serif';
+      }
+
+      function drawTitle(ctx, title, pixelRatio) {
+        ctx.fillStyle = isDarkTheme() ? CFG.TEXT_DARK : CFG.TEXT_LIGHT;
+        ctx.font = 'bold ' + Math.round(CFG.TITLE_FONT_SIZE * pixelRatio) + 'px ' + getThemeFont();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(
+          title.toUpperCase(),
+          Math.round(CFG.TITLE_PADDING_LEFT * pixelRatio),
+          Math.round(CFG.TITLE_PADDING_TOP * pixelRatio)
+        );
+      }
+
+      function triggerDownload(canvas, filename) {
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = filename;
+        a.click();
+      }
+
+      function exportChart(chartId, presetKey) {
+        if (!window.chartInstances || !window.chartInstances[chartId]) return;
+
+        var preset = PRESETS[presetKey];
+        var targetW = preset.width;
+        var targetH = preset.height;
+        var pixelRatio = targetW / CFG.LOGICAL_BASE;
+        var logicalH = Math.round(targetH / pixelRatio);
+
+        // Reserve space for title
+        var chartEl = document.getElementById(chartId);
+        var title = getChartTitle(chartEl);
+        var titleLogicalH = title ? (CFG.TITLE_PADDING_TOP + CFG.TITLE_FONT_SIZE + CFG.TITLE_PADDING_BOTTOM) : 0;
+
+        // ECharts reflows to fill its container — give it the full space
+        var tmp = renderChart(chartId, CFG.LOGICAL_BASE, logicalH - titleLogicalH);
+
+        // Wait a frame for render, then composite
+        setTimeout(function() {
+          var chartDataUrl = tmp.chart.getDataURL({type: 'png', pixelRatio: pixelRatio, backgroundColor: 'transparent'});
+          var titlePxH = Math.round(titleLogicalH * pixelRatio);
+
+          var canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          var ctx = canvas.getContext('2d');
+
+          ctx.fillStyle = getChartBg();
+          ctx.fillRect(0, 0, targetW, targetH);
+
+          if (title) { drawTitle(ctx, title, pixelRatio); }
+
+          var img = new Image();
+          img.onload = function() {
+            ctx.drawImage(img, 0, titlePxH, targetW, targetH - titlePxH);
+            triggerDownload(canvas, slugify(title || 'chart') + '-' + presetKey + '.png');
+            tmp.chart.dispose();
+            document.body.removeChild(tmp.div);
+          };
+          img.src = chartDataUrl;
+        }, 100);
+      }
+
+      function showMenu(e, chartId) {
+        e.preventDefault();
+        removeMenu();
+
+        menu = document.createElement('div');
+        menu.className = 'mviz-export-menu';
+
+        var header = document.createElement('div');
+        header.className = 'mviz-export-menu-header';
+        header.textContent = 'Save as PNG';
+        menu.appendChild(header);
+
+        var keys = ['square', 'portrait', 'landscape'];
+        for (var i = 0; i < keys.length; i++) {
+          (function(key) {
+            var item = document.createElement('div');
+            item.className = 'mviz-export-menu-item';
+            item.textContent = PRESETS[key].label;
+            item.addEventListener('click', function() {
+              removeMenu();
+              exportChart(chartId, key);
+            });
+            menu.appendChild(item);
+          })(keys[i]);
+        }
+
+        // Position near cursor, clamped to viewport
+        var x = e.clientX;
+        var y = e.clientY;
+        document.body.appendChild(menu);
+        var mw = menu.offsetWidth;
+        var mh = menu.offsetHeight;
+        if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
+        if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+      }
+
+      // Dismiss on click elsewhere
+      document.addEventListener('click', removeMenu);
+      document.addEventListener('contextmenu', function(e) {
+        // Only show for chart containers that have an ECharts instance
+        var target = e.target;
+        var el = target.closest ? target.closest('[id]') : null;
+        while (el) {
+          if (window.chartInstances && window.chartInstances[el.id]) {
+            showMenu(e, el.id);
+            return;
+          }
+          el = el.parentElement ? el.parentElement.closest('[id]') : null;
+        }
+        // Not a chart — let default context menu through
+        removeMenu();
+      });
+    })();
+  </script>
+</body>
+</html>

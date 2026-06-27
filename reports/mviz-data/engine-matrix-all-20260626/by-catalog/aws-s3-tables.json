@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "DuckDB": 6.415,
+      "PyIceberg": 3.538827,
+      "Spark": 10.744282,
+      "size": "tiny"
+    },
+    {
+      "DuckDB": 7.329,
+      "PyIceberg": 3.574185,
+      "Spark": 6.121774,
+      "size": "small"
+    },
+    {
+      "DuckDB": 9.702,
+      "PyIceberg": 5.478647,
+      "Spark": 12.513253,
+      "size": "medium"
+    },
+    {
+      "DuckDB": 39.609,
+      "PyIceberg": 18.059773,
+      "Spark": 24.155968,
+      "size": "large"
+    }
+  ],
+  "format": "duration",
+  "title": "AWS S3 Tables",
+  "type": "line",
+  "x": "size",
+  "y": [
+    "DuckDB",
+    "PyIceberg",
+    "Spark"
+  ]
+}

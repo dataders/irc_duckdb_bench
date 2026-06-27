@@ -1,0 +1,165 @@
+{
+  "columns": [
+    {
+      "id": "size",
+      "title": "Size"
+    },
+    {
+      "id": "engine",
+      "title": "Engine"
+    },
+    {
+      "id": "fastest",
+      "title": "Fastest"
+    },
+    {
+      "fmt": "duration",
+      "id": "polaris_remote_s",
+      "title": "Polaris remote"
+    },
+    {
+      "fmt": "duration",
+      "id": "horizon_s",
+      "title": "Horizon"
+    },
+    {
+      "fmt": "duration",
+      "id": "aws_s3_tables_s",
+      "title": "AWS S3 Tables"
+    },
+    {
+      "fmt": "num1",
+      "id": "horizon_vs_polaris",
+      "title": "Horizon / Polaris"
+    },
+    {
+      "fmt": "num1",
+      "id": "s3_tables_vs_polaris",
+      "title": "S3 Tables / Polaris"
+    }
+  ],
+  "data": [
+    {
+      "aws_s3_tables_s": 6.415,
+      "engine": "DuckDB",
+      "fastest": "Polaris remote",
+      "horizon_s": 45.714,
+      "horizon_vs_polaris": 19.14,
+      "polaris_remote_s": 2.389,
+      "s3_tables_vs_polaris": 2.69,
+      "size": "tiny"
+    },
+    {
+      "aws_s3_tables_s": 3.538827,
+      "engine": "PyIceberg",
+      "fastest": "Polaris remote",
+      "horizon_s": 29.480169,
+      "horizon_vs_polaris": 16.59,
+      "polaris_remote_s": 1.777305,
+      "s3_tables_vs_polaris": 1.99,
+      "size": "tiny"
+    },
+    {
+      "aws_s3_tables_s": 10.744282,
+      "engine": "Spark",
+      "fastest": "Polaris remote",
+      "horizon_s": 23.312209,
+      "horizon_vs_polaris": 4.42,
+      "polaris_remote_s": 5.269865,
+      "s3_tables_vs_polaris": 2.04,
+      "size": "tiny"
+    },
+    {
+      "aws_s3_tables_s": 7.329,
+      "engine": "DuckDB",
+      "fastest": "Polaris remote",
+      "horizon_s": 25.174,
+      "horizon_vs_polaris": 10.46,
+      "polaris_remote_s": 2.407,
+      "s3_tables_vs_polaris": 3.04,
+      "size": "small"
+    },
+    {
+      "aws_s3_tables_s": 3.574185,
+      "engine": "PyIceberg",
+      "fastest": "Polaris remote",
+      "horizon_s": 22.366596,
+      "horizon_vs_polaris": 14.3,
+      "polaris_remote_s": 1.564074,
+      "s3_tables_vs_polaris": 2.29,
+      "size": "small"
+    },
+    {
+      "aws_s3_tables_s": 6.121774,
+      "engine": "Spark",
+      "fastest": "Polaris remote",
+      "horizon_s": 15.227815,
+      "horizon_vs_polaris": 5.17,
+      "polaris_remote_s": 2.945484,
+      "s3_tables_vs_polaris": 2.08,
+      "size": "small"
+    },
+    {
+      "aws_s3_tables_s": 9.702,
+      "engine": "DuckDB",
+      "fastest": "Polaris remote",
+      "horizon_s": 24.979,
+      "horizon_vs_polaris": 6.02,
+      "polaris_remote_s": 4.146,
+      "s3_tables_vs_polaris": 2.34,
+      "size": "medium"
+    },
+    {
+      "aws_s3_tables_s": 5.478647,
+      "engine": "PyIceberg",
+      "fastest": "Polaris remote",
+      "horizon_s": 12.692561,
+      "horizon_vs_polaris": 4.54,
+      "polaris_remote_s": 2.794235,
+      "s3_tables_vs_polaris": 1.96,
+      "size": "medium"
+    },
+    {
+      "aws_s3_tables_s": 12.513253,
+      "engine": "Spark",
+      "fastest": "Polaris remote",
+      "horizon_s": 19.452835,
+      "horizon_vs_polaris": 3.16,
+      "polaris_remote_s": 6.159776,
+      "s3_tables_vs_polaris": 2.03,
+      "size": "medium"
+    },
+    {
+      "aws_s3_tables_s": 39.609,
+      "engine": "DuckDB",
+      "fastest": "Polaris remote",
+      "horizon_s": 32.138,
+      "horizon_vs_polaris": 1.6,
+      "polaris_remote_s": 20.061,
+      "s3_tables_vs_polaris": 1.97,
+      "size": "large"
+    },
+    {
+      "aws_s3_tables_s": 18.059773,
+      "engine": "PyIceberg",
+      "fastest": "Polaris remote",
+      "horizon_s": 25.496717,
+      "horizon_vs_polaris": 2.44,
+      "polaris_remote_s": 10.438981,
+      "s3_tables_vs_polaris": 1.73,
+      "size": "large"
+    },
+    {
+      "aws_s3_tables_s": 24.155968,
+      "engine": "Spark",
+      "fastest": "Polaris remote",
+      "horizon_s": 31.529776,
+      "horizon_vs_polaris": 3.74,
+      "polaris_remote_s": 8.436577,
+      "s3_tables_vs_polaris": 2.86,
+      "size": "large"
+    }
+  ],
+  "title": "Remote catalog operation seconds and ratios",
+  "type": "table"
+}
