@@ -1,0 +1,4 @@
+{
+  "content": "## DuckDB HTTP Timings\n\nHTTP debug timings are populated for DuckDB CLI runs in this parquet. The HTTP metric is summed request duration, not wall time. PyIceberg and Spark rows do not include comparable HTTP request timing.",
+  "type": "textarea"
+}

@@ -1,0 +1,49 @@
+size,rows,catalog,catalog_label,engine,workload,variant,passed,total_s,operation_s,read_s,support_s,http_duration_ms,http_request_count
+tiny,4,aws_glue,aws_glue,duckdb,crud,no_stage_no_purge,True,7.377,6.286,1.902,0.352,7249,28
+tiny,4,aws_glue,aws_glue,pyiceberg,create-write-read,default,True,7.945991,7.740129,1.301701,0.0,0,0
+tiny,4,aws_glue,aws_glue,spark,create-write-read,default,True,15.142299,9.033699,1.741318,0.0,0,0
+tiny,4,aws_s3_tables,aws_s3_tables,duckdb,crud,no_stage_create,True,7.406,6.415,1.847,0.488,7292,29
+tiny,4,aws_s3_tables,aws_s3_tables,pyiceberg,create-write-read,default,True,3.963587,3.538827,0.708053,0.0,0,0
+tiny,4,aws_s3_tables,aws_s3_tables,spark,create-write-read,default,True,14.550288,10.744282,1.726627,0.0,0,0
+tiny,4,horizon,Snowflake Horizon,duckdb,crud,stage_multi_metadata,True,48.874,45.714,4.539,1.13,48780,28
+tiny,4,horizon,Snowflake Horizon,pyiceberg,create-write-read,default,True,30.112568,29.480169,3.957877,0.0,0,0
+tiny,4,horizon,Snowflake Horizon,spark,create-write-read,default,True,28.210595,23.312209,1.400304,0.0,0,0
+tiny,4,polaris_remote,Polaris remote,duckdb,crud,default,True,2.873,2.389,0.657,0.278,2723,30
+tiny,4,polaris_remote,Polaris remote,pyiceberg,create-write-read,default,True,2.042916,1.777305,0.291852,0.0,0,0
+tiny,4,polaris_remote,Polaris remote,spark,create-write-read,default,True,21.901563,5.269865,1.0329,0.0,0,0
+small,10000,aws_glue,aws_glue,duckdb,crud,no_stage_no_purge,True,8.004,7.094,2.478,0.301,7875,30
+small,10000,aws_glue,aws_glue,pyiceberg,create-write-read,default,True,8.051337,7.949641,1.550999,0.0,0,0
+small,10000,aws_glue,aws_glue,spark,create-write-read,default,True,7.647035,5.473507,1.278674,0.0,0,0
+small,10000,aws_s3_tables,aws_s3_tables,duckdb,crud,no_stage_create,True,8.304,7.329,2.339,0.427,8190,31
+small,10000,aws_s3_tables,aws_s3_tables,pyiceberg,create-write-read,default,True,3.877999,3.574185,0.963701,0.0,0,0
+small,10000,aws_s3_tables,aws_s3_tables,spark,create-write-read,default,True,8.110278,6.121774,1.386815,0.0,0,0
+small,10000,horizon,Snowflake Horizon,duckdb,crud,stage_multi_metadata,True,28.289,25.174,3.795,0.453,28207,29
+small,10000,horizon,Snowflake Horizon,pyiceberg,create-write-read,default,True,23.306685,22.366596,2.172585,0.0,0,0
+small,10000,horizon,Snowflake Horizon,spark,create-write-read,default,True,18.727635,15.227815,0.689619,0.0,0,0
+small,10000,polaris_remote,Polaris remote,duckdb,crud,default,True,2.903,2.407,0.713,0.269,2820,32
+small,10000,polaris_remote,Polaris remote,pyiceberg,create-write-read,default,True,1.71588,1.564074,0.440994,0.0,0,0
+small,10000,polaris_remote,Polaris remote,spark,create-write-read,default,True,6.384218,2.945484,0.447732,0.0,0,0
+medium,1000000,aws_glue,aws_glue,duckdb,crud,no_stage_no_purge,True,10.729,9.672,3.648,0.442,11988,41
+medium,1000000,aws_glue,aws_glue,pyiceberg,create-write-read,default,True,9.893407,9.739888,2.387608,0.0,0,0
+medium,1000000,aws_glue,aws_glue,spark,create-write-read,default,True,12.164507,9.339621,2.293492,0.0,0,0
+medium,1000000,aws_s3_tables,aws_s3_tables,duckdb,crud,no_stage_create,True,10.725,9.702,3.63,0.458,12195,42
+medium,1000000,aws_s3_tables,aws_s3_tables,pyiceberg,create-write-read,default,True,5.912892,5.478647,1.611434,0.0,0,0
+medium,1000000,aws_s3_tables,aws_s3_tables,spark,create-write-read,default,True,15.353525,12.513253,2.373902,0.0,0,0
+medium,1000000,horizon,Snowflake Horizon,duckdb,crud,stage_multi_metadata,True,27.299,24.979,3.145,0.562,27375,41
+medium,1000000,horizon,Snowflake Horizon,pyiceberg,create-write-read,default,True,13.281272,12.692561,1.680756,0.0,0,0
+medium,1000000,horizon,Snowflake Horizon,spark,create-write-read,default,True,22.458738,19.452835,2.17363,0.0,0,0
+medium,1000000,polaris_remote,Polaris remote,duckdb,crud,default,True,4.637,4.146,1.247,0.288,4635,43
+medium,1000000,polaris_remote,Polaris remote,pyiceberg,create-write-read,default,True,3.049024,2.794235,0.79017,0.0,0,0
+medium,1000000,polaris_remote,Polaris remote,spark,create-write-read,default,True,9.908715,6.159776,0.909272,0.0,0,0
+large,10000000,aws_glue,aws_glue,duckdb,crud,no_stage_no_purge,True,43.101,41.912,20.936,0.464,54006,164
+large,10000000,aws_glue,aws_glue,pyiceberg,create-write-read,default,True,33.815309,33.65938,10.319156,0.0,0,0
+large,10000000,aws_glue,aws_glue,spark,create-write-read,default,True,45.450252,30.974569,3.290311,0.0,0,0
+large,10000000,aws_s3_tables,aws_s3_tables,duckdb,crud,no_stage_create,True,40.985,39.609,16.925,0.613,52770,165
+large,10000000,aws_s3_tables,aws_s3_tables,pyiceberg,create-write-read,default,True,18.469445,18.059773,5.828352,0.0,0,0
+large,10000000,aws_s3_tables,aws_s3_tables,spark,create-write-read,default,True,40.157276,24.155968,3.019052,0.0,0,0
+large,10000000,horizon,Snowflake Horizon,duckdb,crud,stage_multi_metadata,True,35.068,32.138,7.498,0.736,35527,163
+large,10000000,horizon,Snowflake Horizon,pyiceberg,create-write-read,default,True,26.19282,25.496717,3.49288,0.0,0,0
+large,10000000,horizon,Snowflake Horizon,spark,create-write-read,default,True,35.186079,31.529776,2.554898,0.0,0,0
+large,10000000,polaris_remote,Polaris remote,duckdb,crud,default,True,20.608,20.061,8.364,0.289,22419,166
+large,10000000,polaris_remote,Polaris remote,pyiceberg,create-write-read,default,True,10.704523,10.438981,2.748635,0.0,0,0
+large,10000000,polaris_remote,Polaris remote,spark,create-write-read,default,True,13.388393,8.436577,1.157583,0.0,0,0

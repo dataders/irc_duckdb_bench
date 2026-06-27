@@ -1,0 +1,5 @@
+size,AWS Glue,AWS S3 Tables,Snowflake Horizon,Polaris remote
+tiny,6.286,6.415,45.714,2.389
+small,7.094,7.329,25.174,2.407
+medium,9.672,9.702,24.979,4.146
+large,41.912,39.609,32.138,20.061

@@ -5,7 +5,7 @@
   <title>DuckDB Iceberg Engine Matrix</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -336,7 +336,7 @@
       opacity: 1;
       visibility: visible;
     }
-    
+
     .mviz-export-menu {
       position: fixed;
       z-index: 10000;
@@ -389,11 +389,11 @@
         <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
       </button>
     </div>
-    
+
         <section class="dashboard-section">
-          
+
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
       <div class="big-value">48</div>
       <div class="label">Benchmark rows</div>
@@ -412,7 +412,7 @@
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <div class="note note-warning">
         <div class="note-content"><strong>Comparison note:</strong> DuckDB rows use the CRUD workload. PyIceberg and Spark rows use create-write-read. <code>operation_s</code> excludes engine startup/setup where possible, but DuckDB still includes delete and read-after-delete work.</div>
@@ -420,9 +420,9 @@
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
-      
+
       <div class="markdown-content" id="md-6210032"></div>
       <script>
         document.getElementById('md-6210032').innerHTML = marked.parse(`## Performance Across Data Sizes By Catalog
@@ -432,37 +432,37 @@ Each chart fixes one catalog and compares DuckDB, PyIceberg, and Spark.`);
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">AWS Glue</h3>
       <div id="chart_7" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">AWS S3 Tables</h3>
       <div id="chart_8" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">Snowflake Horizon</h3>
       <div id="chart_9" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">Polaris remote</h3>
       <div id="chart_10" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
-      
+
       <div class="markdown-content" id="md-6099224"></div>
       <script>
         document.getElementById('md-6099224').innerHTML = marked.parse(`## Performance Across Data Sizes By Query Engine
@@ -472,33 +472,66 @@ Each chart fixes one query engine and compares catalogs across input sizes.`);
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">DuckDB</h3>
       <div id="chart_12" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">PyIceberg</h3>
       <div id="chart_13" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">Spark</h3>
       <div id="chart_14" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
+          <div class="row">
+
+    <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
+
+      <div class="markdown-content" id="md-8219042"></div>
+      <script>
+        document.getElementById('md-8219042').innerHTML = marked.parse(`## DuckDB HTTP Timings
+
+HTTP debug timings are populated for DuckDB CLI runs in this parquet. The HTTP metric is summed request duration, not wall time. PyIceberg and Spark rows do not include comparable HTTP request timing.`);
+      </script>
+    </div>
+          </div>
+          <div class="row">
+
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">DuckDB HTTP timing by catalog</h3>
+      <div id="chart_16" style="width: 100%; height: 232px;"></div>
+    </div>
+          </div>
+          <div class="row">
+
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">DuckDB HTTP request timing</h3>
+      <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+        <thead>
+          <tr><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Size</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Catalog</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Total</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Operation</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Summed HTTP</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Requests</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS Glue</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.38</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.29</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.25</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">28</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS S3 Tables</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.41</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6.42</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.29</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">29</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Snowflake Horizon</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">48.87</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">45.71</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">48.78</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">28</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">tiny</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.87</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.39</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.72</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">30</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS Glue</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">8.00</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.09</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.88</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">30</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS S3 Tables</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">8.30</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7.33</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">8.19</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">31</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Snowflake Horizon</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">28.29</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">25.17</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">28.21</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">29</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">small</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.90</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.41</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2.82</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">32</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS Glue</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10.73</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">9.67</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">11.99</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">41</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS S3 Tables</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10.72</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">9.70</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">12.20</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">42</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Snowflake Horizon</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">27.30</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">24.98</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">27.38</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">41</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">medium</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.64</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.15</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4.63</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">43</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS Glue</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">43.10</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">41.91</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">54.01</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">164</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">AWS S3 Tables</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">40.98</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">39.61</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">52.77</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">165</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Snowflake Horizon</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">35.07</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">32.14</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">35.53</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">163</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">large</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Polaris remote</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">20.61</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">20.06</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">22.42</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">166</td></tr>
+        </tbody>
+      </table>
+    </div>
+          </div>
         </section>
         <section class="dashboard-section has-divider">
-          
+
           <div class="row">
-            
+
     <div class="grid-item textarea-item" style="--col-span: 16; grid-column: span 16;">
-      
+
       <div class="markdown-content" id="md-5974175"></div>
       <script>
         document.getElementById('md-5974175').innerHTML = marked.parse(`## Remote Catalog Comparison
@@ -508,28 +541,28 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">DuckDB: remote catalogs</h3>
-      <div id="chart_16" style="width: 100%; height: 232px;"></div>
+      <div id="chart_19" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">PyIceberg: remote catalogs</h3>
-      <div id="chart_17" style="width: 100%; height: 232px;"></div>
+      <div id="chart_20" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">Spark: remote catalogs</h3>
-      <div id="chart_18" style="width: 100%; height: 232px;"></div>
+      <div id="chart_21" style="width: 100%; height: 232px;"></div>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
       <h3 class="chart-title">Remote catalog operation seconds and ratios</h3>
       <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
@@ -543,15 +576,15 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
     </div>
           </div>
           <div class="row">
-            
+
     <div class="inline-header" style="--col-span: 16; grid-column: span 16;">
       <p class="inline-header-text">Source</p>
     </div>
           </div>
           <div class="row">
-            
+
     <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
-      <div class="text-content">Parquet input: `reports/engine-matrix-all-20260626.parquet`. Generated mviz data: `reports/mviz-data/engine-matrix-all-20260626`.</div>
+      <div class="text-content">Parquet input: `reports/engine-matrix-all-20260626.parquet`. Flat CSV export: `reports/engine-matrix-all-20260626.csv`. Generated mviz data: `reports/mviz-data/engine-matrix-all-20260626`.</div>
     </div>
           </div>
         </section>
@@ -572,7 +605,7 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       }
     }
 
-    
+
     (function() {
       var chart = echarts.init(document.getElementById('chart_7'), null, {renderer: 'svg'});
       window.chartInstances = window.chartInstances || {};
@@ -3310,13 +3343,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
   },
   "series": [
     {
-      "name": "Polaris remote",
+      "name": "AWS Glue",
       "type": "line",
       "data": [
-        2.389,
-        2.407,
-        4.146,
-        20.061
+        7.249,
+        7.875,
+        11.988,
+        54.006
       ],
       "smooth": false,
       "symbol": "none",
@@ -3341,13 +3374,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       }
     },
     {
-      "name": "Snowflake Horizon",
+      "name": "AWS S3 Tables",
       "type": "line",
       "data": [
-        45.714,
-        25.174,
-        24.979,
-        32.138
+        7.292,
+        8.19,
+        12.195,
+        52.77
       ],
       "smooth": false,
       "symbol": "none",
@@ -3372,13 +3405,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       }
     },
     {
-      "name": "AWS S3 Tables",
+      "name": "Snowflake Horizon",
       "type": "line",
       "data": [
-        6.415,
-        7.329,
-        9.702,
-        39.609
+        48.78,
+        28.207,
+        27.375,
+        35.527
       ],
       "smooth": false,
       "symbol": "none",
@@ -3392,6 +3425,37 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
         "show": true,
         "formatter": "{a}",
         "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.723,
+        2.82,
+        4.635,
+        22.419
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e18727"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e18727",
         "fontSize": 10,
         "offset": [
           5,
@@ -3481,13 +3545,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
   },
   "series": [
     {
-      "name": "Polaris remote",
+      "name": "AWS Glue",
       "type": "line",
       "data": [
-        2.389,
-        2.407,
-        4.146,
-        20.061
+        7.249,
+        7.875,
+        11.988,
+        54.006
       ],
       "smooth": false,
       "symbol": "none",
@@ -3512,13 +3576,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       }
     },
     {
-      "name": "Snowflake Horizon",
+      "name": "AWS S3 Tables",
       "type": "line",
       "data": [
-        45.714,
-        25.174,
-        24.979,
-        32.138
+        7.292,
+        8.19,
+        12.195,
+        52.77
       ],
       "smooth": false,
       "symbol": "none",
@@ -3543,13 +3607,13 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       }
     },
     {
-      "name": "AWS S3 Tables",
+      "name": "Snowflake Horizon",
       "type": "line",
       "data": [
-        6.415,
-        7.329,
-        9.702,
-        39.609
+        48.78,
+        28.207,
+        27.375,
+        35.527
       ],
       "smooth": false,
       "symbol": "none",
@@ -3563,6 +3627,37 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
         "show": true,
         "formatter": "{a}",
         "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        2.723,
+        2.82,
+        4.635,
+        22.419
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#f5a84a"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#f5a84a",
         "fontSize": 10,
         "offset": [
           5,
@@ -3584,11 +3679,11 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       window.addEventListener('resize', function() { chart.resize(); });
     })();
     (function() {
-      var chart = echarts.init(document.getElementById('chart_17'), null, {renderer: 'svg'});
+      var chart = echarts.init(document.getElementById('chart_19'), null, {renderer: 'svg'});
       window.chartInstances = window.chartInstances || {};
       window.chartOptions = window.chartOptions || {};
-      window.chartInstances['chart_17'] = chart;
-      window.chartOptions['chart_17'] = {
+      window.chartInstances['chart_19'] = chart;
+      window.chartOptions['chart_19'] = {
         light: {
   "backgroundColor": "transparent",
   "animation": false,
@@ -3666,10 +3761,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "Polaris remote",
       "type": "line",
       "data": [
-        1.777305,
-        1.564074,
-        2.794235,
-        10.438981
+        2.389,
+        2.407,
+        4.146,
+        20.061
       ],
       "smooth": false,
       "symbol": "none",
@@ -3697,10 +3792,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "Snowflake Horizon",
       "type": "line",
       "data": [
-        29.480169,
-        22.366596,
-        12.692561,
-        25.496717
+        45.714,
+        25.174,
+        24.979,
+        32.138
       ],
       "smooth": false,
       "symbol": "none",
@@ -3728,10 +3823,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "AWS S3 Tables",
       "type": "line",
       "data": [
-        3.538827,
-        3.574185,
-        5.478647,
-        18.059773
+        6.415,
+        7.329,
+        9.702,
+        39.609
       ],
       "smooth": false,
       "symbol": "none",
@@ -3837,10 +3932,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "Polaris remote",
       "type": "line",
       "data": [
-        1.777305,
-        1.564074,
-        2.794235,
-        10.438981
+        2.389,
+        2.407,
+        4.146,
+        20.061
       ],
       "smooth": false,
       "symbol": "none",
@@ -3868,10 +3963,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "Snowflake Horizon",
       "type": "line",
       "data": [
-        29.480169,
-        22.366596,
-        12.692561,
-        25.496717
+        45.714,
+        25.174,
+        24.979,
+        32.138
       ],
       "smooth": false,
       "symbol": "none",
@@ -3899,10 +3994,10 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       "name": "AWS S3 Tables",
       "type": "line",
       "data": [
-        3.538827,
-        3.574185,
-        5.478647,
-        18.059773
+        6.415,
+        7.329,
+        9.702,
+        39.609
       ],
       "smooth": false,
       "symbol": "none",
@@ -3933,15 +4028,368 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
 }
       };
       var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
-      chart.setOption(window.chartOptions['chart_17'][currentTheme]);
+      chart.setOption(window.chartOptions['chart_19'][currentTheme]);
       window.addEventListener('resize', function() { chart.resize(); });
     })();
     (function() {
-      var chart = echarts.init(document.getElementById('chart_18'), null, {renderer: 'svg'});
+      var chart = echarts.init(document.getElementById('chart_20'), null, {renderer: 'svg'});
       window.chartInstances = window.chartInstances || {};
       window.chartOptions = window.chartOptions || {};
-      window.chartInstances['chart_18'] = chart;
-      window.chartOptions['chart_18'] = {
+      window.chartInstances['chart_20'] = chart;
+      window.chartOptions['chart_20'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "tiny",
+      "small",
+      "medium",
+      "large"
+    ],
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888"
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "Polaris remote",
+      "type": "line",
+      "data": [
+        1.777305,
+        1.564074,
+        2.794235,
+        10.438981
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "Snowflake Horizon",
+      "type": "line",
+      "data": [
+        29.480169,
+        22.366596,
+        12.692561,
+        25.496717
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "AWS S3 Tables",
+      "type": "line",
+      "data": [
+        3.538827,
+        3.574185,
+        5.478647,
+        18.059773
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_20'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_21'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_21'] = chart;
+      window.chartOptions['chart_21'] = {
         light: {
   "backgroundColor": "transparent",
   "animation": false,
@@ -4286,7 +4734,7 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
 }
       };
       var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
-      chart.setOption(window.chartOptions['chart_18'][currentTheme]);
+      chart.setOption(window.chartOptions['chart_21'][currentTheme]);
       window.addEventListener('resize', function() { chart.resize(); });
     })();
 
@@ -4306,7 +4754,7 @@ Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.`);
       });
     });
 
-    
+
     // --- mviz PNG export ---
     (function() {
       var PRESETS = {"square":{"width":1080,"height":1080,"label":"Square (1080 × 1080)"},"portrait":{"width":1080,"height":1350,"label":"Portrait (1080 × 1350)"},"landscape":{"width":1920,"height":1080,"label":"Landscape (1920 × 1080)"}};

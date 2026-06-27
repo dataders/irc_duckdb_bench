@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +17,7 @@ import pyarrow.parquet as pq
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "reports"
 DEFAULT_PARQUET = REPORTS_DIR / "engine-matrix-all-20260626.parquet"
+DEFAULT_CSV = REPORTS_DIR / "engine-matrix-all-20260626.csv"
 DEFAULT_MARKDOWN = REPORTS_DIR / "engine-matrix-all-20260626-mviz.md"
 DEFAULT_HTML = REPORTS_DIR / "engine-matrix-all-20260626-mviz.html"
 DEFAULT_DATA_DIR = REPORTS_DIR / "mviz-data" / "engine-matrix-all-20260626"
@@ -35,6 +38,7 @@ ENGINE_LABELS = {
     "pyiceberg": "PyIceberg",
     "spark": "Spark",
 }
+type MvizRef = tuple[Path, dict[str, Any]]
 
 
 def ordered(values: set[str], preferred: tuple[str, ...]) -> list[str]:
@@ -64,13 +68,34 @@ def read_rows(parquet_path: Path) -> list[dict[str, Any]]:
     return [row for row in rows if row.get("passed", True)]
 
 
-def chart_path(data_dir: Path, group: str, name: str) -> Path:
-    return data_dir / group / f"{slug(name)}.json"
+def reset_data_dir(data_dir: Path) -> None:
+    if not data_dir.exists():
+        return
+    for child in data_dir.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
+def data_path(data_dir: Path, group: str, name: str, suffix: str) -> Path:
+    return data_dir / group / f"{slug(name)}.{suffix}"
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+
+
+def write_csv(path: Path, rows: list[dict[str, Any]], columns: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {column: "" if row.get(column) is None else row.get(column) for column in columns}
+            )
 
 
 def pivot_rows(
@@ -100,6 +125,31 @@ def pivot_rows(
     return result
 
 
+def pivot_metric_rows(
+    rows: list[dict[str, Any]],
+    *,
+    metric_field: str,
+    series_values: list[str],
+    filter_field: str,
+    filter_value: str,
+) -> list[dict[str, Any]]:
+    by_size: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if row[filter_field] != filter_value:
+            continue
+        size = str(row["size"])
+        output = by_size.setdefault(size, {"size": size})
+        output[series_label("catalog", str(row["catalog"]))] = seconds(row[metric_field])
+
+    result = []
+    for size in ordered(set(by_size), SIZE_ORDER):
+        output = by_size[size]
+        for series_value in series_values:
+            output.setdefault(series_label("catalog", series_value), None)
+        result.append(output)
+    return result
+
+
 def series_label(field: str, value: str) -> str:
     if field == "catalog":
         return CATALOG_LABELS.get(value, value)
@@ -108,22 +158,21 @@ def series_label(field: str, value: str) -> str:
     return value
 
 
-def line_spec(title: str, y_fields: list[str], data: list[dict[str, Any]]) -> dict[str, Any]:
+def line_options(title: str, y_fields: list[str]) -> dict[str, Any]:
     return {
         "type": "line",
         "title": title,
         "x": "size",
         "y": y_fields,
         "format": "duration",
-        "data": data,
     }
 
 
-def build_catalog_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Path]:
+def build_catalog_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[MvizRef]:
     catalogs = ordered({str(row["catalog"]) for row in rows}, CATALOG_ORDER)
     engines = ordered({str(row["engine"]) for row in rows}, ENGINE_ORDER)
     y_fields = [ENGINE_LABELS.get(engine, engine) for engine in engines]
-    paths = []
+    refs = []
     for catalog in catalogs:
         data = pivot_rows(
             rows,
@@ -133,17 +182,17 @@ def build_catalog_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Pat
             filter_field="catalog",
             filter_value=catalog,
         )
-        path = chart_path(data_dir, "by-catalog", catalog)
-        write_json(path, line_spec(CATALOG_LABELS.get(catalog, catalog), y_fields, data))
-        paths.append(path)
-    return paths
+        path = data_path(data_dir, "by-catalog", catalog, "csv")
+        write_csv(path, data, ["size", *y_fields])
+        refs.append((path, line_options(CATALOG_LABELS.get(catalog, catalog), y_fields)))
+    return refs
 
 
-def build_engine_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Path]:
+def build_engine_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[MvizRef]:
     engines = ordered({str(row["engine"]) for row in rows}, ENGINE_ORDER)
     catalogs = ordered({str(row["catalog"]) for row in rows}, CATALOG_ORDER)
     y_fields = [CATALOG_LABELS.get(catalog, catalog) for catalog in catalogs]
-    paths = []
+    refs = []
     for engine in engines:
         data = pivot_rows(
             rows,
@@ -153,17 +202,17 @@ def build_engine_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Path
             filter_field="engine",
             filter_value=engine,
         )
-        path = chart_path(data_dir, "by-engine", engine)
-        write_json(path, line_spec(ENGINE_LABELS.get(engine, engine), y_fields, data))
-        paths.append(path)
-    return paths
+        path = data_path(data_dir, "by-engine", engine, "csv")
+        write_csv(path, data, ["size", *y_fields])
+        refs.append((path, line_options(ENGINE_LABELS.get(engine, engine), y_fields)))
+    return refs
 
 
-def build_remote_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Path]:
+def build_remote_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[MvizRef]:
     engines = ordered({str(row["engine"]) for row in rows}, ENGINE_ORDER)
     y_fields = [CATALOG_LABELS[catalog] for catalog in REMOTE_CATALOGS]
     remote_rows = [row for row in rows if row["catalog"] in REMOTE_CATALOGS]
-    paths = []
+    refs = []
     for engine in engines:
         data = pivot_rows(
             remote_rows,
@@ -173,17 +222,41 @@ def build_remote_charts(rows: list[dict[str, Any]], data_dir: Path) -> list[Path
             filter_field="engine",
             filter_value=engine,
         )
-        path = chart_path(data_dir, "remote-comparison", engine)
-        write_json(
-            path,
-            line_spec(
-                f"{ENGINE_LABELS.get(engine, engine)}: remote catalogs",
-                y_fields,
-                data,
-            ),
+        path = data_path(data_dir, "remote-comparison", engine, "csv")
+        write_csv(path, data, ["size", *y_fields])
+        refs.append(
+            (
+                path,
+                line_options(
+                    f"{ENGINE_LABELS.get(engine, engine)}: remote catalogs",
+                    y_fields,
+                ),
+            )
         )
-        paths.append(path)
-    return paths
+    return refs
+
+
+def build_http_chart(rows: list[dict[str, Any]], data_dir: Path) -> MvizRef:
+    duckdb_rows = [
+        {
+            **row,
+            "http_s": seconds(float(row.get("http_duration_ms") or 0) / 1000),
+        }
+        for row in rows
+        if row["engine"] == "duckdb"
+    ]
+    catalogs = ordered({str(row["catalog"]) for row in duckdb_rows}, CATALOG_ORDER)
+    y_fields = [CATALOG_LABELS.get(catalog, catalog) for catalog in catalogs]
+    data = pivot_metric_rows(
+        duckdb_rows,
+        metric_field="http_s",
+        series_values=catalogs,
+        filter_field="engine",
+        filter_value="duckdb",
+    )
+    path = data_path(data_dir, "http", "duckdb-http-seconds", "csv")
+    write_csv(path, data, ["size", *y_fields])
+    return path, line_options("DuckDB HTTP timing by catalog", y_fields)
 
 
 def build_kpi_specs(rows: list[dict[str, Any]], data_dir: Path) -> list[Path]:
@@ -242,7 +315,7 @@ def build_kpi_specs(rows: list[dict[str, Any]], data_dir: Path) -> list[Path]:
     return paths
 
 
-def remote_table(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def remote_table_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     lookup = {
         (row["size"], row["engine"], row["catalog"]): seconds(row["operation_s"])
         for row in rows
@@ -270,6 +343,10 @@ def remote_table(rows: list[dict[str, Any]]) -> dict[str, Any]:
                     "s3_tables_vs_polaris": round(s3_tables / polaris, 2) if polaris else None,
                 }
             )
+    return data
+
+
+def remote_table_options() -> dict[str, Any]:
     return {
         "type": "table",
         "title": "Remote catalog operation seconds and ratios",
@@ -283,14 +360,98 @@ def remote_table(rows: list[dict[str, Any]]) -> dict[str, Any]:
             {"id": "horizon_vs_polaris", "title": "Horizon / Polaris", "fmt": "num1"},
             {"id": "s3_tables_vs_polaris", "title": "S3 Tables / Polaris", "fmt": "num1"},
         ],
-        "data": data,
     }
 
 
-def write_remote_table(rows: list[dict[str, Any]], data_dir: Path) -> Path:
-    path = data_dir / "remote-comparison" / "remote-catalog-table.json"
-    write_json(path, remote_table(rows))
-    return path
+def write_remote_table(rows: list[dict[str, Any]], data_dir: Path) -> MvizRef:
+    path = data_path(data_dir, "remote-comparison", "remote-catalog-table", "csv")
+    data = remote_table_rows(rows)
+    write_csv(
+        path,
+        data,
+        [
+            "size",
+            "engine",
+            "fastest",
+            "polaris_remote_s",
+            "horizon_s",
+            "aws_s3_tables_s",
+            "horizon_vs_polaris",
+            "s3_tables_vs_polaris",
+        ],
+    )
+    return path, remote_table_options()
+
+
+def http_table_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    data = []
+    for row in sorted(
+        [row for row in rows if row["engine"] == "duckdb"],
+        key=lambda row: (
+            SIZE_ORDER.index(row["size"]) if row["size"] in SIZE_ORDER else len(SIZE_ORDER),
+            CATALOG_ORDER.index(row["catalog"])
+            if row["catalog"] in CATALOG_ORDER
+            else len(CATALOG_ORDER),
+        ),
+    ):
+        operation_s = seconds(row["operation_s"])
+        http_s = seconds(float(row.get("http_duration_ms") or 0) / 1000)
+        data.append(
+            {
+                "size": row["size"],
+                "catalog": CATALOG_LABELS.get(row["catalog"], row["catalog"]),
+                "total_s": seconds(row["total_s"]),
+                "operation_s": operation_s,
+                "http_s": http_s,
+                "http_requests": int(row.get("http_request_count") or 0),
+            }
+        )
+    return data
+
+
+def http_table_options() -> dict[str, Any]:
+    return {
+        "type": "table",
+        "title": "DuckDB HTTP request timing",
+        "columns": [
+            {"id": "size", "title": "Size"},
+            {"id": "catalog", "title": "Catalog"},
+            {"id": "total_s", "title": "Total", "fmt": "duration"},
+            {"id": "operation_s", "title": "Operation", "fmt": "duration"},
+            {"id": "http_s", "title": "Summed HTTP", "fmt": "duration"},
+            {"id": "http_requests", "title": "Requests", "fmt": "num0"},
+        ],
+    }
+
+
+def write_http_table(rows: list[dict[str, Any]], data_dir: Path) -> MvizRef:
+    path = data_path(data_dir, "http", "duckdb-http-table", "csv")
+    write_csv(
+        path,
+        http_table_rows(rows),
+        ["size", "catalog", "total_s", "operation_s", "http_s", "http_requests"],
+    )
+    return path, http_table_options()
+
+
+def write_flat_csv(rows: list[dict[str, Any]], csv_path: Path) -> None:
+    columns = [
+        "size",
+        "rows",
+        "catalog",
+        "catalog_label",
+        "engine",
+        "workload",
+        "variant",
+        "passed",
+        "total_s",
+        "operation_s",
+        "read_s",
+        "support_s",
+        "http_duration_ms",
+        "http_request_count",
+    ]
+    write_csv(csv_path, rows, columns)
 
 
 def write_note(data_dir: Path) -> Path:
@@ -321,6 +482,14 @@ def write_section_specs(data_dir: Path) -> dict[str, Path]:
             "Performance Across Data Sizes By Query Engine",
             "Each chart fixes one query engine and compares catalogs across input sizes.",
         ),
+        "http": (
+            "DuckDB HTTP Timings",
+            (
+                "HTTP debug timings are populated for DuckDB CLI runs in this parquet. The "
+                "HTTP metric is summed request duration, not wall time. PyIceberg and Spark "
+                "rows do not include comparable HTTP request timing."
+            ),
+        ),
         "remote": (
             "Remote Catalog Comparison",
             "Focused comparison of Polaris remote, Snowflake Horizon, and AWS S3 Tables.",
@@ -340,22 +509,34 @@ def write_section_specs(data_dir: Path) -> dict[str, Path]:
     return paths
 
 
-def block(kind: str, path: Path, markdown_path: Path, size: str) -> str:
-    return f"```{kind} size={size} file={relpath(path, markdown_path.parent)}\n```"
+def block(
+    kind: str,
+    path: Path,
+    markdown_path: Path,
+    size: str,
+    options: dict[str, Any] | None = None,
+) -> str:
+    head = f"```{kind} size={size} file={relpath(path, markdown_path.parent)}"
+    if options is None:
+        return f"{head}\n```"
+    return f"{head}\n{json.dumps(options, sort_keys=True)}\n```"
 
 
 def write_markdown(
     *,
     markdown_path: Path,
     parquet_path: Path,
+    csv_path: Path,
     data_dir: Path,
     kpis: list[Path],
     note: Path,
     sections: dict[str, Path],
-    catalog_charts: list[Path],
-    engine_charts: list[Path],
-    remote_charts: list[Path],
-    remote_table_path: Path,
+    catalog_charts: list[MvizRef],
+    engine_charts: list[MvizRef],
+    http_chart: MvizRef,
+    http_table_ref: MvizRef,
+    remote_charts: list[MvizRef],
+    remote_table_ref: MvizRef,
 ) -> None:
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -376,8 +557,8 @@ def write_markdown(
         "",
     ]
 
-    for path in catalog_charts:
-        lines.append(block("line", path, markdown_path, "[16,8]"))
+    for path, options in catalog_charts:
+        lines.append(block("line", path, markdown_path, "[16,8]", options))
         lines.append("")
 
     lines.extend(
@@ -386,9 +567,20 @@ def write_markdown(
             "",
         ]
     )
-    for path in engine_charts:
-        lines.append(block("line", path, markdown_path, "[16,8]"))
+    for path, options in engine_charts:
+        lines.append(block("line", path, markdown_path, "[16,8]", options))
         lines.append("")
+
+    lines.extend(
+        [
+            block("textarea", sections["http"], markdown_path, "[16,2]"),
+            "",
+            block("line", http_chart[0], markdown_path, "[16,8]", http_chart[1]),
+            "",
+            block("table", http_table_ref[0], markdown_path, "[16,7]", http_table_ref[1]),
+            "",
+        ]
+    )
 
     lines.extend(
         [
@@ -398,16 +590,18 @@ def write_markdown(
             "",
         ]
     )
-    for path in remote_charts:
-        lines.append(block("line", path, markdown_path, "[16,8]"))
+    for path, options in remote_charts:
+        lines.append(block("line", path, markdown_path, "[16,8]", options))
         lines.append("")
-    lines.append(block("table", remote_table_path, markdown_path, "[16,7]"))
+    table_path, table_options = remote_table_ref
+    lines.append(block("table", table_path, markdown_path, "[16,7]", table_options))
     lines.extend(
         [
             "",
             "### Source",
             "",
             f"Parquet input: `{relpath(parquet_path, ROOT)}`.",
+            f"Flat CSV export: `{relpath(csv_path, ROOT)}`.",
             f"Generated mviz data: `{relpath(data_dir, ROOT)}`.",
             "",
         ]
@@ -422,30 +616,45 @@ def render_html(markdown_path: Path, html_path: Path) -> None:
         check=True,
         cwd=ROOT,
     )
+    html_path.write_text(
+        "\n".join(line.rstrip() for line in html_path.read_text().splitlines()) + "\n"
+    )
 
 
 def build(
-    parquet_path: Path, markdown_path: Path, html_path: Path, data_dir: Path, render: bool
+    parquet_path: Path,
+    csv_path: Path,
+    markdown_path: Path,
+    html_path: Path,
+    data_dir: Path,
+    render: bool,
 ) -> None:
     rows = read_rows(parquet_path)
+    reset_data_dir(data_dir)
+    write_flat_csv(rows, csv_path)
     kpis = build_kpi_specs(rows, data_dir)
     note = write_note(data_dir)
     sections = write_section_specs(data_dir)
     catalog_charts = build_catalog_charts(rows, data_dir)
     engine_charts = build_engine_charts(rows, data_dir)
+    http_chart = build_http_chart(rows, data_dir)
+    http_table_ref = write_http_table(rows, data_dir)
     remote_charts = build_remote_charts(rows, data_dir)
-    remote_table_path = write_remote_table(rows, data_dir)
+    remote_table_ref = write_remote_table(rows, data_dir)
     write_markdown(
         markdown_path=markdown_path,
         parquet_path=parquet_path,
+        csv_path=csv_path,
         data_dir=data_dir,
         kpis=kpis,
         note=note,
         sections=sections,
         catalog_charts=catalog_charts,
         engine_charts=engine_charts,
+        http_chart=http_chart,
+        http_table_ref=http_table_ref,
         remote_charts=remote_charts,
-        remote_table_path=remote_table_path,
+        remote_table_ref=remote_table_ref,
     )
     if render:
         render_html(markdown_path, html_path)
@@ -454,6 +663,7 @@ def build(
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--parquet", type=Path, default=DEFAULT_PARQUET)
+    parser.add_argument("--csv", type=Path, default=DEFAULT_CSV)
     parser.add_argument("--markdown", type=Path, default=DEFAULT_MARKDOWN)
     parser.add_argument("--html", type=Path, default=DEFAULT_HTML)
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
@@ -465,6 +675,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     build(
         parquet_path=args.parquet,
+        csv_path=args.csv,
         markdown_path=args.markdown,
         html_path=args.html,
         data_dir=args.data_dir,

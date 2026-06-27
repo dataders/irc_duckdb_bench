@@ -1,0 +1,17 @@
+size,catalog,total_s,operation_s,http_s,http_requests
+tiny,AWS Glue,7.377,6.286,7.249,28
+tiny,AWS S3 Tables,7.406,6.415,7.292,29
+tiny,Snowflake Horizon,48.874,45.714,48.78,28
+tiny,Polaris remote,2.873,2.389,2.723,30
+small,AWS Glue,8.004,7.094,7.875,30
+small,AWS S3 Tables,8.304,7.329,8.19,31
+small,Snowflake Horizon,28.289,25.174,28.207,29
+small,Polaris remote,2.903,2.407,2.82,32
+medium,AWS Glue,10.729,9.672,11.988,41
+medium,AWS S3 Tables,10.725,9.702,12.195,42
+medium,Snowflake Horizon,27.299,24.979,27.375,41
+medium,Polaris remote,4.637,4.146,4.635,43
+large,AWS Glue,43.101,41.912,54.006,164
+large,AWS S3 Tables,40.985,39.609,52.77,165
+large,Snowflake Horizon,35.068,32.138,35.527,163
+large,Polaris remote,20.608,20.061,22.419,166

@@ -1,0 +1,13 @@
+size,engine,fastest,polaris_remote_s,horizon_s,aws_s3_tables_s,horizon_vs_polaris,s3_tables_vs_polaris
+tiny,DuckDB,Polaris remote,2.389,45.714,6.415,19.14,2.69
+tiny,PyIceberg,Polaris remote,1.777305,29.480169,3.538827,16.59,1.99
+tiny,Spark,Polaris remote,5.269865,23.312209,10.744282,4.42,2.04
+small,DuckDB,Polaris remote,2.407,25.174,7.329,10.46,3.04
+small,PyIceberg,Polaris remote,1.564074,22.366596,3.574185,14.3,2.29
+small,Spark,Polaris remote,2.945484,15.227815,6.121774,5.17,2.08
+medium,DuckDB,Polaris remote,4.146,24.979,9.702,6.02,2.34
+medium,PyIceberg,Polaris remote,2.794235,12.692561,5.478647,4.54,1.96
+medium,Spark,Polaris remote,6.159776,19.452835,12.513253,3.16,2.03
+large,DuckDB,Polaris remote,20.061,32.138,39.609,1.6,1.97
+large,PyIceberg,Polaris remote,10.438981,25.496717,18.059773,2.44,1.73
+large,Spark,Polaris remote,8.436577,31.529776,24.155968,3.74,2.86
