@@ -2,7 +2,8 @@
 
 This standalone benchmark runs the local DuckDB CLI directly against the
 `iceberg` extension and compares REST-catalog behavior across local Lakekeeper,
-local Apache Polaris, remote Polaris, and Snowflake Horizon.
+local Apache Polaris, remote Polaris, Snowflake Horizon, AWS Glue, and Amazon
+S3 Tables.
 
 The runner records two timing views:
 
@@ -229,6 +230,7 @@ Every run first tries these tiny-table attach variants:
 
 - `default`
 - `no_stage_create`
+- `no_stage_no_purge`
 - `no_multi_commit`
 - `skip_create_metadata_updates`
 - `stage_multi_metadata`
@@ -325,10 +327,32 @@ Outputs land under:
 `summary.json` keeps per-repetition phase timings. `summary.csv` flattens those
 timings to one row per phase.
 
-Single-node Spark is not wired into this repo yet. Java 17 is enough for a local
-Spark process, but a Spark runner still needs a PySpark dependency, Iceberg Spark
-runtime package coordinates, and Spark catalog/FileIO properties separate from
-PyIceberg's configuration.
+## Spark Create-Write-Read Benchmark
+
+Use `scripts/spark_create_table_benchmark.py` when the goal is to measure the
+same create/write/read path through single-node Spark. The runner reuses
+`benchmarks/catalog_benchmarks.toml`, starts `local[2]`, writes generated rows
+with Iceberg Spark, scans row count plus id sum back, and drops the table unless
+`--keep-tables` is set.
+
+Run the local Lakekeeper path:
+
+```bash
+docker compose up -d
+direnv exec . uv run scripts/spark_create_table_benchmark.py \
+  --target lakekeeper_local \
+  --sizes tiny \
+  --repetitions 3
+```
+
+Outputs land under:
+
+```text
+.tmp/catalog_benchmarks/<run-id>/<target>/spark-create-write-read/
+```
+
+`summary.json` keeps per-repetition phase timings. `summary.csv` flattens those
+timings to one row per phase.
 
 Run only the compatibility matrix:
 
@@ -395,13 +419,18 @@ For `--workload tpch-read`, workload phases are:
 Run these after touching the benchmark runner or tests:
 
 ```bash
-uv run --group dev ruff format --check --no-cache scripts/catalog_benchmark.py tests/test_catalog_benchmark.py
-uv run --group dev ruff check --no-cache scripts tests
-uv run --group dev ty check scripts tests
+uv run --group dev ruff format --check --no-cache scripts tests catalog_benchmark_lib
+uv run --group dev ruff check --no-cache scripts tests catalog_benchmark_lib
+uv run --group dev ty check scripts tests catalog_benchmark_lib
+uv run tests/test_catalog_benchmark.py -v
+uv run tests/test_build_dashboard.py -v
+uv run tests/test_pyiceberg_create_table_benchmark.py -v
+uv run tests/test_spark_create_table_benchmark.py -v
+uv run tests/test_standalone_project.py -v
 ```
 
 Use Ruff to apply formatting:
 
 ```bash
-uv run --group dev ruff format scripts tests
+uv run --group dev ruff format scripts tests catalog_benchmark_lib
 ```
