@@ -14,31 +14,6 @@ with a self-contained HTML view at
 It combines 48 passing benchmark rows across DuckDB, PyIceberg, and Spark for
 `tiny`, `small`, `medium`, and `large` sizes.
 
-Important caveat: DuckDB uses this repo's CRUD workload, while PyIceberg and
-Spark use create-write-read. The report's `operation_s` column excludes engine
-startup/setup phases where possible, but DuckDB still includes delete and
-read-after-delete work.
-
-High-level results from that report:
-
-- PyIceberg is the most frequent fastest engine: it wins 9 of 16 catalog/size
-  combinations, including every Amazon S3 Tables size and most remote Polaris
-  sizes.
-- Spark wins 6 of 16 combinations, especially AWS Glue and some Horizon/remote
-  Polaris cases.
-- DuckDB wins only the tiny AWS Glue case in this mixed-workload matrix, but it
-  is also the only engine here recording DuckDB HTTP request timing directly.
-- Remote Polaris is the fastest catalog at large size in this run: Spark is
-  fastest there at 8.437s operation time, with PyIceberg close behind at
-  10.439s.
-- Amazon S3 Tables is strongest with PyIceberg: 18.060s operation time at large
-  size versus 24.156s for Spark and 39.609s for DuckDB.
-- Horizon remains high-latency for small writes, but improves at larger sizes;
-  PyIceberg is fastest at medium and large, while Spark wins tiny and small.
-- The locked DuckDB variants from the run were `default` for remote Polaris,
-  `stage_multi_metadata` for Horizon, `no_stage_no_purge` for AWS Glue, and
-  `no_stage_create` for Amazon S3 Tables.
-
 ## Current Engine Matrix Snapshot
 
 Source: `reports/engine-matrix-all-20260626.parquet`.
