@@ -5,6 +5,99 @@ the DuckDB CLI directly, records DuckDB phase timing and HTTP request timing, an
 compares attach-option compatibility across Lakekeeper, Polaris, and Snowflake
 Horizon targets.
 
+## Current Engine Matrix Snapshot
+
+Source: `reports/engine-matrix-all-20260626.parquet`.
+
+### Operation Seconds By Catalog
+
+| Size | Catalog | DuckDB | PyIceberg | Spark |
+| --- | --- | --- | --- | --- |
+| tiny | AWS Glue | 6.286s | 7.740s | 9.034s |
+| tiny | AWS S3 Tables | 6.415s | 3.539s | 10.744s |
+| tiny | Snowflake Horizon | 45.714s | 29.480s | 23.312s |
+| tiny | Polaris remote | 2.389s | 1.777s | 5.270s |
+| small | AWS Glue | 7.094s | 7.950s | 5.474s |
+| small | AWS S3 Tables | 7.329s | 3.574s | 6.122s |
+| small | Snowflake Horizon | 25.174s | 22.367s | 15.228s |
+| small | Polaris remote | 2.407s | 1.564s | 2.945s |
+| medium | AWS Glue | 9.672s | 9.740s | 9.340s |
+| medium | AWS S3 Tables | 9.702s | 5.479s | 12.513s |
+| medium | Snowflake Horizon | 24.979s | 12.693s | 19.453s |
+| medium | Polaris remote | 4.146s | 2.794s | 6.160s |
+| large | AWS Glue | 41.912s | 33.659s | 30.975s |
+| large | AWS S3 Tables | 39.609s | 18.060s | 24.156s |
+| large | Snowflake Horizon | 32.138s | 25.497s | 31.530s |
+| large | Polaris remote | 20.061s | 10.439s | 8.437s |
+
+### DuckDB HTTP Request Timing By Type
+
+HTTP timings are populated for DuckDB CLI rows only. Values are summed request
+durations; request counts are in parentheses.
+
+#### REST config
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 0.265s (1) | 0.288s (1) | 1.093s (1) | 0.060s (1) |
+| small | 0.248s (1) | 0.288s (1) | 0.412s (1) | 0.073s (1) |
+| medium | 0.343s (1) | 0.327s (1) | 0.527s (1) | 0.055s (1) |
+| large | 0.289s (1) | 0.326s (1) | 0.584s (1) | 0.089s (1) |
+
+#### REST namespace
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 0.204s (2) | 0.331s (3) | 3.384s (2) | 0.099s (3) |
+| small | 0.198s (2) | 0.252s (3) | 1.010s (2) | 0.100s (3) |
+| medium | 0.200s (2) | 0.244s (3) | 0.937s (2) | 0.113s (3) |
+| large | 0.217s (2) | 0.344s (3) | 1.147s (2) | 0.109s (3) |
+
+#### REST create table
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 0.240s (1) | 0.618s (1) | 15.004s (1) | 0.127s (1) |
+| small | 0.288s (1) | 0.971s (1) | 7.822s (1) | 0.074s (1) |
+| medium | 0.352s (1) | 0.640s (1) | 6.472s (1) | 0.178s (1) |
+| large | 0.307s (1) | 0.632s (1) | 5.997s (1) | 0.082s (1) |
+
+#### REST table commit/load
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 2.889s (10) | 2.211s (10) | 27.744s (9) | 1.332s (10) |
+| small | 2.688s (10) | 2.180s (10) | 17.333s (9) | 1.357s (10) |
+| medium | 2.588s (10) | 2.208s (10) | 16.785s (10) | 1.338s (10) |
+| large | 2.804s (10) | 2.615s (10) | 13.352s (9) | 1.579s (10) |
+
+#### Object metadata
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 2.584s (10) | 2.701s (10) | 1.173s (11) | 0.685s (10) |
+| small | 2.632s (10) | 2.588s (10) | 1.031s (10) | 0.657s (10) |
+| medium | 2.638s (10) | 2.652s (10) | 0.785s (10) | 0.957s (10) |
+| large | 2.942s (10) | 2.998s (10) | 0.965s (10) | 1.513s (10) |
+
+#### Object data
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 1.067s (4) | 1.143s (4) | 0.382s (4) | 0.334s (4) |
+| small | 1.821s (6) | 1.911s (6) | 0.599s (6) | 0.434s (6) |
+| medium | 5.867s (17) | 6.124s (17) | 1.869s (17) | 1.891s (17) |
+| large | 47.447s (140) | 45.855s (140) | 13.482s (140) | 18.971s (140) |
+
+#### Other
+
+| Size | AWS Glue | AWS S3 Tables | Snowflake Horizon | Polaris remote |
+| --- | --- | --- | --- | --- |
+| tiny | 0.000s (0) | 0.000s (0) | 0.000s (0) | 0.086s (1) |
+| small | 0.000s (0) | 0.000s (0) | 0.000s (0) | 0.125s (1) |
+| medium | 0.000s (0) | 0.000s (0) | 0.000s (0) | 0.103s (1) |
+| large | 0.000s (0) | 0.000s (0) | 0.000s (0) | 0.076s (1) |
+
 ## Quick Start
 
 With this machine's dotfiles setup:
