@@ -100,18 +100,6 @@ durations; request counts are in parentheses.
 
 ## Quick Start
 
-With this machine's dotfiles setup:
-
-```bash
-direnv allow
-direnv exec . uv run scripts/catalog_benchmark.py --list-targets
-```
-
-The committed `.envrc` loads the private overlay at
-`~/Developer/dotfiles_env/projects/irc-duckdb-bench.envrc`.
-
-For a manual setup outside that system:
-
 ```bash
 cp .env.example .env
 set -a && source .env && set +a
